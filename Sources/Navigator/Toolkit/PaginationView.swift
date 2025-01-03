@@ -205,6 +205,8 @@ final class PaginationView: UIView, Loggable {
         guard let (index, location) = loadingIndexQueue.popFirst() else {
             return
         }
+        
+        print("[DEBUG] index: \(index), location: \(location)")
 
         if
             loadedViews[index] == nil,

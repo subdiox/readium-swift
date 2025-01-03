@@ -694,12 +694,8 @@ open class EPUBNavigatorViewController: UIViewController,
     public func go(to locator: Locator, options: NavigatorGoOptions) async -> Bool {
         let locator = publication.normalizeLocator(locator)
 
-        guard
-            let spreadIndex = spreads.firstIndexWithHREF(locator.href),
-            on(.jump(locator))
-        else {
-            return false
-        }
+        guard let spreadIndex = spreads.firstIndexWithHREF(locator.href) else { return false }
+        on(.jump(locator))
 
         let success = await paginationView.goToIndex(spreadIndex, location: .locator(locator), options: options)
         on(.jumped)
