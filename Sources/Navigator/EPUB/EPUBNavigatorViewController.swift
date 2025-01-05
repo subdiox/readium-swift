@@ -236,6 +236,7 @@ open class EPUBNavigatorViewController: UIViewController,
     private let tasks = CancellableTasks()
 
     private let viewModel: EPUBNavigatorViewModel
+    private let axis: PaginationAxis
     public var publication: Publication { viewModel.publication }
 
     var config: Configuration { viewModel.config }
@@ -255,6 +256,7 @@ open class EPUBNavigatorViewController: UIViewController,
         publication: Publication,
         initialLocation: Locator?,
         readingOrder: [Link]? = nil,
+        axis: PaginationAxis = .horizontal,
         config: Configuration = .init(),
         httpServer: HTTPServer
     ) throws {
@@ -274,6 +276,7 @@ open class EPUBNavigatorViewController: UIViewController,
             viewModel: viewModel,
             initialLocation: initialLocation,
             readingOrder: readingOrder ?? publication.readingOrder,
+            axis: axis,
             positionsByReadingOrder:
             // Positions and total progression only make sense in the context
             // of the publication's actual reading order. Therefore when
@@ -298,11 +301,13 @@ open class EPUBNavigatorViewController: UIViewController,
         viewModel: EPUBNavigatorViewModel,
         initialLocation: Locator?,
         readingOrder: [Link],
+        axis: PaginationAxis,
         positionsByReadingOrder: @escaping () async -> ReadResult<[[Locator]]>
     ) {
         self.viewModel = viewModel
         currentLocation = initialLocation
         self.readingOrder = readingOrder
+        self.axis = axis
         loadPositionsByReadingOrder = positionsByReadingOrder
 
         super.init(nibName: nil, bundle: nil)
@@ -338,7 +343,8 @@ open class EPUBNavigatorViewController: UIViewController,
         }
 
         paginationView = makePaginationView(
-            hasPositions: !positionsByReadingOrder.isEmpty
+            hasPositions: !positionsByReadingOrder.isEmpty,
+            axis: axis
         )
 
         paginationView.frame = view.bounds
@@ -512,11 +518,12 @@ open class EPUBNavigatorViewController: UIViewController,
 
     private var paginationView: PaginationView!
 
-    private func makePaginationView(hasPositions: Bool) -> PaginationView {
+    private func makePaginationView(hasPositions: Bool, axis: PaginationAxis) -> PaginationView {
         let view = PaginationView(
             frame: .zero,
             preloadPreviousPositionCount: hasPositions ? config.preloadPreviousPositionCount : 0,
-            preloadNextPositionCount: hasPositions ? config.preloadNextPositionCount : 0
+            preloadNextPositionCount: hasPositions ? config.preloadNextPositionCount : 0,
+            axis: axis
         )
         view.delegate = self
         view.backgroundColor = .clear
