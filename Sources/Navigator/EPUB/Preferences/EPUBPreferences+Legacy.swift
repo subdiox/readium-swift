@@ -31,8 +31,10 @@ public extension EPUBPreferences {
         let defaults = UserDefaults.standard
 
         return EPUBPreferences(
-            backgroundColor: defaults.optString(for: .backgroundColor)
-                .flatMap { Color(hex: $0) },
+            backgroundColor: defaults.optColor(
+                lightKey: .backgroundColor,
+                darkKey: .backgroundColorDark
+            ),
             columnCount: defaults.optInt(for: .columnCount)
                 .flatMap { (columnCountValues ?? defaultColumnCountValues).getOrNil($0) }
                 .flatMap { ColumnCount(rawValue: $0) },
@@ -67,8 +69,10 @@ public extension EPUBPreferences {
             textAlign: defaults.optInt(for: .textAlignment)
                 .flatMap { (textAlignmentValues ?? defaultTextAlignmentValues).getOrNil($0) }
                 .flatMap { TextAlignment(rawValue: $0) },
-            textColor: defaults.optString(for: .textColor)
-                .flatMap { Color(hex: $0) },
+            textColor: defaults.optColor(
+                lightKey: .textColor,
+                darkKey: .textColorDark
+            ),
             theme: defaults.optInt(for: .appearance)
                 .flatMap { (appearanceValues ?? defaultAppearanceValues).getOrNil($0) }
                 .flatMap {
@@ -120,6 +124,16 @@ private extension UserDefaults {
         }
         return string(forKey: key.rawValue)
     }
+  
+    func optColor(lightKey: ReadiumCSSName, darkKey: ReadiumCSSName) -> Color? {
+        guard contains(lightKey), contains(darkKey) else {
+            return nil
+        }
+        return Color(
+            lightHex: integer(forKey: lightKey.rawValue),
+            darkHex: integer(forKey: darkKey.rawValue)
+        )
+    }
 }
 
 /// List of strings that can identify the name of a CSS custom property
@@ -141,5 +155,7 @@ private enum ReadiumCSSName: String {
     case ligatures = "--USER__ligatures"
     case paragraphMargins = "--USER__paraSpacing"
     case textColor = "--USER__textColor"
+    case textColorDark = "--USER__textColorDark"
     case backgroundColor = "--USER__backgroundColor"
+    case backgroundColorDark = "--USER__backgroundColorDark"
 }

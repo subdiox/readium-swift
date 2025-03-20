@@ -103,14 +103,14 @@ public enum Theme: String, Codable, Hashable {
     }
 
     // https://github.com/readium/readium-css/blob/master/css/src/modules/ReadiumCSS-day_mode.css
-    private static let dayContentColor = Color(hex: "#121212")!
-    private static let dayBackgroundColor = Color(hex: "#FFFFFF")!
+    private static let dayContentColor = Color(hex: 0x121212)
+    private static let dayBackgroundColor = Color(hex: 0xFFFFFF)
     // https://github.com/readium/readium-css/blob/master/css/src/modules/ReadiumCSS-night_mode.css
-    private static let nightContentColor = Color(hex: "#FEFEFE")!
-    private static let nightBackgroundColor = Color(hex: "#000000")!
+    private static let nightContentColor = Color(hex: 0xFEFEFE)
+    private static let nightBackgroundColor = Color(hex: 0x000000)
     // https://github.com/readium/readium-css/blob/master/css/src/modules/ReadiumCSS-sepia_mode.css
-    private static let sepiaContentColor = Color(hex: "#121212")!
-    private static let sepiaBackgroundColor = Color(hex: "#faf4e8")!
+    private static let sepiaContentColor = Color(hex: 0x121212)
+    private static let sepiaBackgroundColor = Color(hex: 0xfaf4e8)
 }
 
 /// Number of columns displayed in a reflowable document.
@@ -144,47 +144,76 @@ public enum TextAlignment: String, Codable, Hashable {
 }
 
 /// Represents a color stored as a packed int.
-public struct Color: RawRepresentable, Codable, Hashable {
+public struct Color: Codable, Hashable {
     /// Packed int representation.
-    public var rawValue: Int
+    public var lightHex: Int
+    public var darkHex: Int
 
-    public init(rawValue: Int) {
-        self.rawValue = rawValue
+    public init(lightHex: Int, darkHex: Int) {
+        self.lightHex = lightHex
+        self.darkHex = darkHex
     }
-
-    /// Creates a color from a hex representation.
-    public init?(hex: String) {
-        let scanner = Scanner(string: hex.removingPrefix("#"))
-        var hexNumber: UInt64 = 0
-        guard scanner.scanHexInt64(&hexNumber) else {
-            return nil
-        }
-        self.init(rawValue: Int(hexNumber))
+  
+    public init(hex: Int) {
+        self.lightHex = hex
+        self.darkHex = hex
     }
 
     /// Creates a color from a UIKit color.
     ///
     /// Any alpha component is ignored.
-    public init?(uiColor: UIColor) {
+    public init?(
+        uiColor: UIColor,
+        userInterfaceStyle: UIUserInterfaceStyle = .unspecified
+    ) {
+        switch userInterfaceStyle {
+        case .unspecified:
+            let lightColor = uiColor.resolvedColor(with: .init(userInterfaceStyle: .light))
+            let darkColor = uiColor.resolvedColor(with: .init(userInterfaceStyle: .dark))
+            self.lightHex = lightColor.hex
+            self.darkHex = darkColor.hex
+        case .light:
+            let lightColor = uiColor.resolvedColor(with: .init(userInterfaceStyle: .light))
+            self.lightHex = lightColor.hex
+            self.darkHex = lightColor.hex
+        case .dark:
+            let darkColor = uiColor.resolvedColor(with: .init(userInterfaceStyle: .dark))
+            self.lightHex = darkColor.hex
+            self.darkHex = darkColor.hex
+        @unknown default:
+            return nil
+        }
+    }
+  
+    var uiColor: UIColor {
+        .init { traitCollection in
+            traitCollection.userInterfaceStyle == .light
+                ? UIColor(hex: lightHex)
+                : UIColor(hex: darkHex)
+        }
+    }
+}
+
+extension UIColor {
+    convenience init(hex: Int) {
+        let r = CGFloat((hex >> 16) & 0xFF) / 255
+        let g = CGFloat((hex >> 8) & 0xFF) / 255
+        let b = CGFloat(hex & 0xFF) / 255
+        self.init(red: r, green: g, blue: b, alpha: 1.0)
+    }
+    
+    public var hex: Int {
         var red: CGFloat = 0
         var green: CGFloat = 0
         var blue: CGFloat = 0
         var alpha: CGFloat = 0
-        guard uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
-            return nil
+        guard getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            return -1
         }
         let r = Int(red * 255)
         let g = Int(green * 255)
         let b = Int(blue * 255)
-        self.init(rawValue: (r << 16) | (g << 8) | b)
-    }
-
-    /// Returns a UIKit color for the receiver.
-    public var uiColor: UIColor {
-        let r = CGFloat((rawValue >> 16) & 0xFF) / 255
-        let g = CGFloat((rawValue >> 8) & 0xFF) / 255
-        let b = CGFloat(rawValue & 0xFF) / 255
-        return UIColor(red: r, green: g, blue: b, alpha: 1.0)
+        return (r << 16) | (g << 8) | b
     }
 }
 
